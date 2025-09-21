@@ -1,0 +1,14 @@
+.env*
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.DS_Store
+# build output and runtime data
+smart-home-agent/dist/
+smart-home-agent/node_modules/
+node_modules/
+dashboard/web/*.sqlite3
+logs/
+*.pid
