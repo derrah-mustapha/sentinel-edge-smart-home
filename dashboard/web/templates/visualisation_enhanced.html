@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sentinel Edge — Smart Home Control</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0ea5e9;
+      --primary-dark: #0284c7;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --muted: #6b7280;
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --surface-light: #334155;
+      --border: #475569;
+      --text: #f1f5f9;
+      --text-muted: #cbd5e1;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      padding: 1.5rem;
+      overflow-x: hidden;
+    }
+
+    /* ════════════════════ HEADER ════════════════════ */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--primary), var(--success));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1.25rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 0.875rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--danger);
+      box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+      animation: pulse 2s ease-in-out infinite;
+      transition: var(--transition);
+    }
+
+    .status-dot.connected {
+      background: var(--success);
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    .mode-display {
+      padding: 0.75rem 1.25rem;
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--success);
+    }
+
+    /* ════════════════════ MAIN GRID ════════════════════ */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      transition: var(--transition);
+    }
+
+    .card:hover {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 1px var(--primary), 0 20px 25px -5px rgba(14, 165, 233, 0.1);
+    }
+
+    .card-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      color: var(--text);
+    }
+
+    .card-title::before {
+      content: '';
+      width: 4px;
+      height: 20px;
+      background: var(--primary);
+      border-radius: 2px;
+    }
+
+    /* ════════════════════ DEVICE STATE DISPLAY ════════════════════ */
+    .device-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 1rem;
+    }
+
+    .device {
+      background: linear-gradient(135deg, var(--surface-light), var(--surface));
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      text-align: center;
+      transition: var(--transition);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+    }
+
+    .device.active {
+      border-color: var(--primary);
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(14, 165, 233, 0.05));
+      box-shadow: 0 0 20px rgba(14, 165, 233, 0.2);
+    }
+
+    .device-name {
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+
+    .device-state {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .device.active .device-state {
+      animation: glow 1.5s ease-in-out infinite;
+    }
+
+    @keyframes glow {
+      0%, 100% { text-shadow: 0 0 0 rgba(14, 165, 233, 0.5); }
+      50% { text-shadow: 0 0 20px rgba(14, 165, 233, 0.8); }
+    }
+
+    /* ════════════════════ COMMAND BUTTONS ════════════════════ */
+    .button-group {
+      margin-bottom: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .button-group-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      padding: 0 0.5rem;
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      gap: 0.75rem;
+    }
+
+    button {
+      padding: 0.75rem 1rem;
+      background: var(--surface-light);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: var(--transition);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      border-color: var(--primary);
+      box-shadow: 0 10px 15px -3px rgba(14, 165, 233, 0.2);
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    button.primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      border-color: var(--primary);
+      color: white;
+    }
+
+    button.success {
+      background: linear-gradient(135deg, var(--success), rgba(16, 185, 129, 0.7));
+      border-color: var(--success);
+      color: white;
+    }
+
+    button.danger {
+      background: linear-gradient(135deg, var(--danger), rgba(239, 68, 68, 0.7));
+      border-color: var(--danger);
+      color: white;
+    }
+
+    button.warning {
+      background: linear-gradient(135deg, var(--warning), rgba(245, 158, 11, 0.7));
+      border-color: var(--warning);
+      color: white;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* ════════════════════ LIVE LOG ════════════════════ */
+    .log-container {
+      max-height: 400px;
+      overflow-y: auto;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+    }
+
+    .log-entry {
+      display: flex;
+      gap: 1rem;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid rgba(71, 85, 105, 0.3);
+      animation: slideIn 0.3s ease-out;
+    }
+
+    .log-entry:last-child {
+      border-bottom: none;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .log-time {
+      color: var(--muted);
+      flex-shrink: 0;
+      min-width: 100px;
+    }
+
+    .log-topic {
+      color: var(--primary);
+      flex-shrink: 0;
+      min-width: 200px;
+    }
+
+    .log-payload {
+      color: var(--success);
+      word-break: break-all;
+      flex: 1;
+    }
+
+    .log-entry.alert .log-payload {
+      color: var(--danger);
+    }
+
+    /* ════════════════════ SENSORS ════════════════════ */
+    .sensor-display {
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.05), rgba(16, 185, 129, 0.05));
+      border: 1px solid rgba(71, 85, 105, 0.5);
+      border-radius: 12px;
+      padding: 1.5rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .sensor {
+      text-align: center;
+    }
+
+    .sensor-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .sensor-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--primary);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .sensor-bar {
+      height: 4px;
+      background: var(--surface-light);
+      border-radius: 2px;
+      margin-top: 0.75rem;
+      overflow: hidden;
+    }
+
+    .sensor-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--success));
+      border-radius: 2px;
+      transition: width 0.5s ease;
+    }
+
+    .sensor-fill.danger {
+      background: linear-gradient(90deg, var(--danger), var(--warning));
+    }
+
+    /* ════════════════════ RESPONSIVE ════════════════════ */
+    @media (max-width: 768px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .header {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .header h1 {
+        font-size: 1.5rem;
+      }
+
+      body {
+        padding: 1rem;
+      }
+
+      .device-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .button-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ════════════════════ SCROLLBAR ════════════════════ */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--surface);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--primary);
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════ HEADER ════════════════════ -->
+<div class="header">
+  <h1>⚡ Sentinel Control</h1>
+  <div class="header-right">
+    <div class="status-indicator">
+      <div class="status-dot" id="status-dot"></div>
+      <span id="status-text">disconnected</span>
+    </div>
+    <div class="mode-display" id="mode-display">MODE: HOME</div>
+  </div>
+</div>
+
+<!-- ════════════════════ MAIN GRID ════════════════════ -->
+<div class="grid">
+
+  <!-- DEVICE STATE CARD -->
+  <div class="card">
+    <div class="card-title">Device Status</div>
+    <div class="device-grid" id="device-grid">
+      <div class="device" id="dev-lights">
+        <div class="device-name">💡 Lights</div>
+        <div class="device-state" id="state-lights">OFF</div>
+      </div>
+      <div class="device" id="dev-fan">
+        <div class="device-name">🌀 Fan</div>
+        <div class="device-state" id="state-fan">OFF</div>
+      </div>
+      <div class="device" id="dev-door">
+        <div class="device-name">🚪 Door</div>
+        <div class="device-state" id="state-door">🔒</div>
+      </div>
+      <div class="device" id="dev-gas">
+        <div class="device-name">⚠️ Gas</div>
+        <div class="device-state" id="state-gas">✓</div>
+      </div>
+      <div class="device" id="dev-water">
+        <div class="device-name">💧 Water</div>
+        <div class="device-state" id="state-water">✓</div>
+      </div>
+      <div class="device" id="dev-mode">
+        <div class="device-name">🎯 Mode</div>
+        <div class="device-state" id="state-mode">HOME</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIGHTS CONTROL -->
+  <div class="card">
+    <div class="card-title">💡 Lights Control</div>
+    <div class="button-group">
+      <div class="button-row">
+        <button onclick="sendCommand('lights_off')">Off</button>
+        <button onclick="sendCommand('lights_dim')" class="primary">Dim</button>
+        <button onclick="sendCommand('lights_bright')" class="success">Bright</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAN CONTROL -->
+  <div class="card">
+    <div class="card-title">🌀 Fan</div>
+    <div class="button-group">
+      <div class="button-row">
+        <button onclick="sendCommand('fan_off')">Off</button>
+        <button onclick="sendCommand('fan_on')" class="success">On</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DOOR CONTROL -->
+  <div class="card">
+    <div class="card-title">🚪 Door Lock</div>
+    <div class="button-group">
+      <div class="button-row">
+        <button onclick="sendCommand('door_close')" class="primary">Lock</button>
+        <button onclick="sendCommand('door_open')" class="success">Unlock</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- WINDOWS CONTROL -->
+  <div class="card">
+    <div class="card-title">🪟 Windows</div>
+    <div class="button-group">
+      <div class="button-group-label">All Windows</div>
+      <div class="button-row">
+        <button onclick="sendCommand('windows_close_all')">Close All</button>
+        <button onclick="sendCommand('windows_open_all')" class="success">Open All</button>
+      </div>
+    </div>
+    <div class="button-group">
+      <div class="button-group-label">Window 1</div>
+      <div class="button-row">
+        <button onclick="sendCommand('window_close_1')">Close</button>
+        <button onclick="sendCommand('window_open_1')" class="success">Open</button>
+      </div>
+    </div>
+    <div class="button-group">
+      <div class="button-group-label">Window 2</div>
+      <div class="button-row">
+        <button onclick="sendCommand('window_close_2')">Close</button>
+        <button onclick="sendCommand('window_open_2')" class="success">Open</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODE CONTROL -->
+  <div class="card">
+    <div class="card-title">🎯 System Mode</div>
+    <div class="button-group">
+      <div class="button-row">
+        <button onclick="sendCommand('mode_home')" class="primary">Home</button>
+        <button onclick="sendCommand('mode_away')" class="primary">Away</button>
+        <button onclick="sendCommand('mode_sleep')" class="primary">Sleep</button>
+        <button onclick="sendCommand('mode_guest')" class="primary">Guest</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SAFETY & EMERGENCY -->
+  <div class="card">
+    <div class="card-title">🚨 Safety & Emergency</div>
+    <div class="button-group">
+      <div class="button-group-label">Status</div>
+      <div class="button-row">
+        <button onclick="sendCommand('status_query')" class="primary">Query Status</button>
+      </div>
+    </div>
+    <div class="button-group">
+      <div class="button-group-label">Emergency</div>
+      <div class="button-row">
+        <button onclick="sendCommand('emergency_activate')" class="danger">🚨 ACTIVATE</button>
+        <button onclick="sendCommand('emergency_cancel')" class="warning">Cancel</button>
+        <button onclick="sendCommand('alert_cancel')" class="success">Clear Alerts</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SENSORS -->
+  <div class="card">
+    <div class="card-title">📊 Live Sensors</div>
+    <div class="sensor-display">
+      <div class="sensor">
+        <div class="sensor-label">Gas Level</div>
+        <div class="sensor-value" id="sensor-gas">0</div>
+        <div class="sensor-bar"><div class="sensor-fill" id="sensor-gas-fill" style="width:0%;"></div></div>
+      </div>
+      <div class="sensor">
+        <div class="sensor-label">Water Level</div>
+        <div class="sensor-value" id="sensor-water">0</div>
+        <div class="sensor-bar"><div class="sensor-fill" id="sensor-water-fill" style="width:0%;"></div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ════════════════════ LIVE LOG ════════════════════ -->
+<div class="card">
+  <div class="card-title">📝 Live Command Log</div>
+  <div class="log-container" id="log-container">
+    <div class="log-entry">
+      <span class="log-time">[init]</span>
+      <span class="log-topic">system</span>
+      <span class="log-payload">Dashboard initialized</span>
+    </div>
+  </div>
+</div>
+
+<!-- Socket.IO -->
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<script>
+/* ════════════════════ STATE ════════════════════ */
+const state = {
+  lights: 'off',
+  fan: 'off',
+  door: 'locked',
+  mode: 'home',
+  gas: 'safe',
+  water: 'safe',
+  gasRaw: 0,
+  waterRaw: 0,
+};
+
+let socket = null;
+let socketConnected = false;
+const LOG_MAX = 100;
+let logBuffer = [];
+
+/* ════════════════════ SOCKET.IO ════════════════════ */
+function socketioConnect() {
+  socket = io();
+
+  socket.on('connect', () => {
+    socketConnected = true;
+    updateStatus(true);
+    addLog('system', 'backend connected');
+  });
+
+  socket.on('disconnect', () => {
+    socketConnected = false;
+    updateStatus(false);
+    addLog('system', 'disconnected from backend');
+  });
+
+  socket.on('initial_state', (state_data) => {
+    addLog('system', `received ${Object.keys(state_data).length} state topics`);
+    for (let topic in state_data) {
+      handleStateTopic(topic, state_data[topic]);
+    }
+  });
+
+  socket.on('mqtt_message', (entry) => {
+    handleStateTopic(entry.topic, entry.payload);
+    addLog(entry.topic, entry.payload);
+  });
+
+  socket.on('command_result', (data) => {
+    if (data.ok) {
+      addLog(`✓ ${data.token}`, 'sent');
+    } else {
+      addLog(`✗ error`, data.error || 'unknown');
+    }
+  });
+}
+
+/* ════════════════════ STATE HANDLERS ════════════════════ */
+function handleStateTopic(topic, payload) {
+  if (topic.includes('lights')) updateLights(payload);
+  else if (topic.includes('fan')) updateFan(payload);
+  else if (topic.includes('door')) updateDoor(payload);
+  else if (topic.includes('mode')) updateMode(payload);
+  else if (topic.includes('gas_valve')) updateGasValve(payload);
+  else if (topic.includes('water_valve')) updateWaterValve(payload);
+  else if (topic.includes('sensors/gas')) updateSensorGas(parseInt(payload));
+  else if (topic.includes('sensors/water')) updateSensorWater(parseInt(payload));
+}
+
+function updateLights(val) {
+  state.lights = ['off', 'dim', 'bright'].includes(val) ? val : state.lights;
+  renderDevice('lights', state.lights);
+}
+
+function updateFan(val) {
+  state.fan = ['off', 'on'].includes(val) ? val : state.fan;
+  renderDevice('fan', state.fan);
+}
+
+function updateDoor(val) {
+  state.door = ['locked', 'open'].includes(val) ? val : state.door;
+  renderDevice('door', state.door);
+}
+
+function updateMode(val) {
+  state.mode = ['home', 'away', 'sleep', 'guest'].includes(val) ? val : state.mode;
+  renderDevice('mode', state.mode);
+  document.getElementById('mode-display').textContent = `MODE: ${state.mode.toUpperCase()}`;
+}
+
+function updateGasValve(val) {
+  state.gas = val === 'closed' ? 'danger' : 'safe';
+  renderDevice('gas', state.gas);
+}
+
+function updateWaterValve(val) {
+  state.water = val === 'closed' ? 'flood' : 'safe';
+  renderDevice('water', state.water);
+}
+
+function updateSensorGas(val) {
+  state.gasRaw = val;
+  document.getElementById('sensor-gas').textContent = val;
+  const pct = Math.min(val * 10, 100);
+  const fill = document.getElementById('sensor-gas-fill');
+  fill.style.width = pct + '%';
+  if (val > 0) fill.classList.add('danger');
+  else fill.classList.remove('danger');
+}
+
+function updateSensorWater(val) {
+  state.waterRaw = val;
+  document.getElementById('sensor-water').textContent = val;
+  const pct = Math.min((val / 1023) * 100, 100);
+  const fill = document.getElementById('sensor-water-fill');
+  fill.style.width = pct + '%';
+  if (val > 300) fill.classList.add('danger');
+  else fill.classList.remove('danger');
+}
+
+/* ════════════════════ UI RENDERING ════════════════════ */
+function renderDevice(key, val) {
+  const elem = document.getElementById(`dev-${key}`);
+  const stateElem = document.getElementById(`state-${key}`);
+  
+  const displayMap = {
+    lights: { off: '💡 OFF', dim: '🟡 DIM', bright: '🟢 BRIGHT' },
+    fan: { off: 'OFF', on: '✓ ON' },
+    door: { locked: '🔒 LOCKED', open: '🔓 OPEN' },
+    gas: { safe: '✓ SAFE', danger: '⚠️ ALERT' },
+    water: { safe: '✓ SAFE', flood: '⚠️ FLOOD' },
+    mode: { home: 'HOME', away: 'AWAY', sleep: 'SLEEP', guest: 'GUEST' },
+  };
+
+  const display = displayMap[key] || {};
+  const text = display[val] || val.toUpperCase();
+  
+  if (stateElem) stateElem.textContent = text;
+
+  if (elem) {
+    if (val === 'on' || val === 'bright' || val === 'open' || val === 'away' || val === 'sleep' || val === 'guest' || val === 'danger' || val === 'flood') {
+      elem.classList.add('active');
+    } else {
+      elem.classList.remove('active');
+    }
+  }
+}
+
+function updateStatus(connected) {
+  const dot = document.getElementById('status-dot');
+  const text = document.getElementById('status-text');
+  
+  if (connected) {
+    dot.classList.add('connected');
+    text.textContent = 'backend connected';
+  } else {
+    dot.classList.remove('connected');
+    text.textContent = 'disconnected';
+  }
+}
+
+/* ════════════════════ COMMAND SENDING ════════════════════ */
+function sendCommand(token) {
+  if (!socket || !socketConnected) {
+    alert('Not connected to backend');
+    return;
+  }
+  socket.emit('execute_token', { token: token, source: 'visualisation' });
+  addLog(`→ cmd`, token);
+}
+
+/* ════════════════════ LOGGING ════════════════════ */
+function addLog(topic, payload) {
+  const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  
+  logBuffer.unshift({ time, topic, payload });
+  if (logBuffer.length > LOG_MAX) logBuffer.pop();
+
+  renderLog();
+}
+
+function renderLog() {
+  const container = document.getElementById('log-container');
+  container.innerHTML = logBuffer
+    .map(entry => {
+      const isAlert = entry.payload.includes('ALERT') || entry.payload.includes('FLOOD') || entry.payload.includes('danger');
+      return `<div class="log-entry ${isAlert ? 'alert' : ''}">
+        <span class="log-time">[${entry.time}]</span>
+        <span class="log-topic">${entry.topic}</span>
+        <span class="log-payload">${entry.payload}</span>
+      </div>`;
+    })
+    .join('');
+  
+  container.scrollTop = 0;
+}
+
+/* ════════════════════ INIT ════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+  // Render initial state
+  renderDevice('lights', state.lights);
+  renderDevice('fan', state.fan);
+  renderDevice('door', state.door);
+  renderDevice('mode', state.mode);
+  renderDevice('gas', state.gas);
+  renderDevice('water', state.water);
+
+  // Connect to backend
+  socketioConnect();
+});
+</script>
+
+</body>
+</html>

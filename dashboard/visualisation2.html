@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Home — Breadboard Status</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #0d1117;
+    --surface:   #161b22;
+    --surface2:  #1c2330;
+    --border:    #30363d;
+    --text:      #e6edf3;
+    --muted:     #7d8590;
+    --mono:      'Share Tech Mono', monospace;
+    --sans:      'Exo 2', sans-serif;
+
+    --led-lights-off:   #1a1508;
+    --led-lights-dim:   #a87c10;
+    --led-lights-on:    #f5c518;
+    --led-lights-glow:  #f5c51866;
+
+    --led-fan-off:      #071410;
+    --led-fan-on:       #1de9b6;
+    --led-fan-glow:     #1de9b655;
+
+    --led-gas-off:      #150808;
+    --led-gas-on:       #ff4444;
+    --led-gas-glow:     #ff444455;
+
+    --led-water-off:    #060e18;
+    --led-water-on:     #4da6ff;
+    --led-water-glow:   #4da6ff55;
+
+    --led-mode-off:     #071208;
+    --led-mode-on:      #39d353;
+    --led-mode-glow:    #39d35355;
+
+    --led-door-off:     #130d04;
+    --led-door-on:      #ff8c42;
+    --led-door-glow:    #ff8c4255;
+
+    --board-green:      #1a2e1a;
+    --board-line:       #1f3a1f;
+    --hole-empty:       #0f1f0f;
+    --hole-border:      #2a4a2a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem;
+  }
+
+  /* ── header ── */
+  header {
+    width: 100%;
+    max-width: 960px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1rem;
+  }
+  header h1 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text);
+  }
+  header h1 span { color: var(--led-mode-on); }
+  .status-pill {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .status-pill .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: background 0.3s;
+  }
+  .status-pill.connected .dot { background: var(--led-mode-on); box-shadow: 0 0 6px var(--led-mode-glow); }
+  .status-pill.connected { border-color: #2d4a2d; color: var(--led-mode-on); }
+
+  /* ── main layout ── */
+  .main {
+    width: 100%;
+    max-width: 960px;
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  /* ── breadboard ── */
+  .board-wrap {
+    flex: 0 0 auto;
+  }
+  .board-label {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 0.6rem;
+  }
+
+  .breadboard {
+    background: var(--board-green);
+    border: 2px solid #2a4a2a;
+    border-radius: 10px;
+    padding: 14px 10px 14px 10px;
+    display: flex;
+    gap: 0;
+    position: relative;
+
+    /* PCB grid texture */
+    background-image:
+      linear-gradient(var(--board-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--board-line) 1px, transparent 1px);
+    background-size: 10px 10px;
+  }
+
+  /* row labels column */
+  .row-labels {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-right: 8px;
+    padding-top: 28px;
+  }
+  .row-lbl {
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: #5a8f5a;
+    width: 16px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+  }
+
+  /* the actual grid */
+  .bb-grid {
+    display: grid;
+    /* 5 wide columns, 7 narrow rows */
+    grid-template-columns: repeat(5, 110px);
+    grid-template-rows: 28px repeat(7, 26px);
+    gap: 3px 6px;
+  }
+
+  /* column headers */
+  .col-hdr {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: #5a8f5a;
+    letter-spacing: 0.1em;
+  }
+
+  /* empty hole */
+  .hole {
+    width: 110px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+  }
+  .hole-empty {
+    background: transparent;
+    position: relative;
+  }
+  .hole-empty::after {
+    content: '';
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--hole-empty);
+    border: 1px solid var(--hole-border);
+    display: block;
+  }
+
+  /* LED cell */
+  .led-cell {
+    background: rgba(0,0,0,0.35);
+    border: 1px solid #1f3a1f;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 8px;
+    gap: 6px;
+    position: relative;
+    transition: border-color 0.3s;
+  }
+  .led-cell.active {
+    border-color: rgba(255,255,255,0.15);
+  }
+
+  /* the LED circle */
+  .led {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: background 0.25s, box-shadow 0.25s;
+    border: 1.5px solid rgba(0,0,0,0.4);
+    position: relative;
+  }
+  /* lens shine */
+  .led::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 3px;
+    width: 5px; height: 4px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.35);
+    pointer-events: none;
+  }
+
+  /* LED label text */
+  .led-label {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+  }
+  .led-name {
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text);
+    line-height: 1.2;
+  }
+  .led-state {
+    font-family: var(--mono);
+    font-size: 0.58rem;
+    color: var(--muted);
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 0.3s;
+  }
+  .led-pin {
+    font-family: var(--mono);
+    font-size: 0.55rem;
+    color: #3a5a3a;
+    flex-shrink: 0;
+  }
+
+  /* ── LED color states ── */
+
+  /* Lights */
+  .led-lights-off   { background: var(--led-lights-off); }
+  .led-lights-dim   { background: var(--led-lights-dim); box-shadow: 0 0 8px var(--led-lights-glow); }
+  .led-lights-bright{ background: var(--led-lights-on);  box-shadow: 0 0 12px var(--led-lights-glow), 0 0 24px var(--led-lights-glow); }
+
+  /* Fan */
+  .led-fan-off { background: var(--led-fan-off); }
+  .led-fan-on  { background: var(--led-fan-on);  box-shadow: 0 0 12px var(--led-fan-glow), 0 0 22px var(--led-fan-glow); }
+
+  /* Gas valve */
+  .led-gas-safe   { background: var(--led-gas-off); }
+  .led-gas-danger { background: var(--led-gas-on);  box-shadow: 0 0 12px var(--led-gas-glow), 0 0 22px var(--led-gas-glow); }
+
+  /* Water valve */
+  .led-water-safe  { background: var(--led-water-off); }
+  .led-water-flood { background: var(--led-water-on);  box-shadow: 0 0 12px var(--led-water-glow), 0 0 22px var(--led-water-glow); }
+
+  /* Mode */
+  .led-mode-off { background: var(--led-mode-off); }
+  .led-mode-on  { background: var(--led-mode-on);  box-shadow: 0 0 12px var(--led-mode-glow), 0 0 22px var(--led-mode-glow); }
+
+  /* Door */
+  .led-door-locked   { background: var(--led-door-off); }
+  .led-door-unlocked { background: var(--led-door-on);  box-shadow: 0 0 12px var(--led-door-glow), 0 0 22px var(--led-door-glow); }
+
+  /* ── pulse animation for alerts ── */
+  @keyframes pulse-red {
+    0%, 100% { box-shadow: 0 0 8px var(--led-gas-glow); }
+    50%       { box-shadow: 0 0 20px #ff444488, 0 0 40px #ff444433; }
+  }
+  @keyframes pulse-blue {
+    0%, 100% { box-shadow: 0 0 8px var(--led-water-glow); }
+    50%       { box-shadow: 0 0 20px #4da6ff88, 0 0 40px #4da6ff33; }
+  }
+  @keyframes blink-slow { 0%,49%{ opacity:1; } 50%,100%{ opacity:0.15; } }
+  @keyframes blink-fast { 0%,24%{ opacity:1; } 25%,74%{ opacity:0.15; } 75%,100%{ opacity:1; } }
+
+  .led.alert-gas   { animation: pulse-red  1s ease-in-out infinite; }
+  .led.alert-water { animation: pulse-blue 1s ease-in-out infinite; }
+  .led.mode-away   { animation: blink-slow 2s step-end infinite; }
+  .led.mode-sleep  { animation: blink-fast 0.4s step-end infinite; }
+
+  /* ── info panel ── */
+  .info-panel {
+    flex: 1;
+    min-width: 240px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .panel-title {
+    font-size: 0.68rem;
+    font-family: var(--mono);
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .state-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: border-color 0.3s;
+  }
+  .state-card.alert { border-color: #5a1a1a; background: #1a0d0d; }
+  .state-card .dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: background 0.3s, box-shadow 0.3s;
+  }
+  .card-body { flex: 1; min-width: 0; }
+  .card-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text);
+  }
+  .card-val {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-top: 1px;
+    transition: color 0.3s;
+  }
+  .card-pin {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    color: #3a5a3a;
+  }
+
+  /* ── sensor bar ── */
+  .sensor-section {
+    width: 100%;
+    max-width: 960px;
+    margin-top: 1.5rem;
+  }
+  .sensor-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .sensor-card {
+    flex: 1;
+    min-width: 160px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    transition: border-color 0.3s;
+  }
+  .sensor-card.alert { border-color: #5a2a1a; }
+  .sensor-lbl {
+    font-size: 0.65rem;
+    font-family: var(--mono);
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .sensor-val {
+    font-family: var(--mono);
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--text);
+    transition: color 0.3s;
+  }
+  .sensor-card.alert .sensor-val { color: var(--led-gas-on); }
+  .sensor-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 8px;
+    overflow: hidden;
+  }
+  .sensor-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.5s ease, background 0.3s;
+  }
+
+  /* ── controls (demo) ── */
+  .controls {
+    width: 100%;
+    max-width: 960px;
+    margin-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    padding-top: 1.2rem;
+  }
+  .controls-title {
+    font-size: 0.68rem;
+    font-family: var(--mono);
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 0.8rem;
+  }
+  .btn-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  button {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.15s;
+  }
+  button:hover { background: var(--surface2); color: var(--text); border-color: #4a6a4a; }
+  button:active { transform: scale(0.97); }
+  button.danger { border-color: #5a1a1a; color: #ff6666; }
+  button.danger:hover { background: #1a0d0d; border-color: var(--led-gas-on); }
+
+  /* ── mode badge ── */
+  .mode-badge {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 12px;
+    border: 1px solid #2d4a2d;
+    color: var(--led-mode-on);
+    background: #0a1a0a;
+    margin-left: auto;
+  }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Smart Home <span>//</span> Breadboard Monitor</h1>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <span class="mode-badge" id="mode-badge">mode: home</span>
+    <div class="status-pill" id="conn-pill">
+      <span class="dot"></span>
+      <span id="conn-text">demo mode</span>
+    </div>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- ══ BREADBOARD ══ -->
+  <div class="board-wrap">
+    <div class="board-label">// breadboard layout — 5 col × 7 row</div>
+    <div class="breadboard">
+
+      <!-- row labels -->
+      <div class="row-labels">
+        <div class="row-lbl" style="height:28px;"></div>
+        <div class="row-lbl">P</div>
+        <div class="row-lbl">G</div>
+        <div class="row-lbl">a</div>
+        <div class="row-lbl">b</div>
+        <div class="row-lbl">c</div>
+        <div class="row-lbl">d</div>
+        <div class="row-lbl">e</div>
+      </div>
+
+      <div class="bb-grid">
+
+        <!-- col headers -->
+        <div class="col-hdr">C1</div>
+        <div class="col-hdr">C2</div>
+        <div class="col-hdr">C3</div>
+        <div class="col-hdr">C4</div>
+        <div class="col-hdr">C5</div>
+
+        <!-- row P -->
+        <div class="hole hole-empty"></div>
+        <!-- LED 3 gas — col2 row P (spans P→G, represented at P) -->
+        <div class="hole led-cell" id="cell-gas" style="grid-row:2; grid-column:2;">
+          <div class="led led-gas-safe" id="led-gas"></div>
+          <div class="led-label">
+            <span class="led-name">Gas valve</span>
+            <span class="led-state" id="lbl-gas">safe · open</span>
+          </div>
+          <span class="led-pin">D6</span>
+        </div>
+        <!-- LED 4 water — col3 row P (spans P→a, represented at P) -->
+        <div class="hole led-cell" id="cell-water" style="grid-row:2; grid-column:3;">
+          <div class="led led-water-safe" id="led-water"></div>
+          <div class="led-label">
+            <span class="led-name">Water valve</span>
+            <span class="led-state" id="lbl-water">safe · open</span>
+          </div>
+          <span class="led-pin">D2</span>
+        </div>
+        <div class="hole hole-empty"></div>
+        <div class="hole hole-empty"></div>
+
+        <!-- row G -->
+        <div class="hole hole-empty"></div>
+        <div class="hole hole-empty"></div>
+        <div class="hole hole-empty"></div>
+        <div class="hole hole-empty"></div>
+        <div class="hole hole-empty"></div>
+
+        <!-- row a -->
+        <div class="hole hole-empty"></div>
+        <div class="hole hole-empty"></div>
+        <div class="hole hole-empty"></div>
+        <div class="hole hole-empty"></div>
+        <div class="hole hole-empty"></div>
+
+        <!-- row b -->
+        <!-- LED 1 lights — col1 row b -->
+        <div class="hole led-cell" id="cell-lights" style="grid-row:5; grid-column:1;">
+          <div class="led led-lights-off" id="led-lights"></div>
+          <div class="led-label">
+            <span class="led-name">Lights</span>
+            <span class="led-state" id="lbl-lights">off</span>
+          </div>
+          <span class="led-pin">D1</span>
+        </div>
+        <div class="hole hole-empty"></div>
+        <div class="hole hole-empty"></div>
+        <!-- LED 5 mode — col4 row b -->
+        <div class="hole led-cell" id="cell-mode" style="grid-row:5; grid-column:4;">
+          <div class="led led-mode-on" id="led-mode"></div>
+          <div class="led-label">
+            <span class="led-name">Mode</span>
+            <span class="led-state" id="lbl-mode">home</span>
+          </div>
+          <span class="led-pin">D8</span>
+        </div>
+        <div class="hole hole-empty"></div>
+
+        <!-- row c -->
+        <div class="hole hole-empty"></div>
+        <div class="hole hole-empty"></div>
+        <div class="hole hole-empty"></div>
+        <div class="hole hole-empty"></div>
+        <div class="hole hole-empty"></div>
+
+        <!-- row d -->
+        <div class="hole hole-empty"></div>
+        <div class="hole hole-empty"></div>
+        <div class="hole hole-empty"></div>
+        <div class="hole hole-empty"></div>
+        <div class="hole hole-empty"></div>
+
+        <!-- row e -->
+        <!-- LED 2 fan — col1 row e -->
+        <div class="hole led-cell" id="cell-fan" style="grid-row:8; grid-column:1;">
+          <div class="led led-fan-off" id="led-fan"></div>
+          <div class="led-label">
+            <span class="led-name">Fan</span>
+            <span class="led-state" id="lbl-fan">off</span>
+          </div>
+          <span class="led-pin">D0</span>
+        </div>
+        <div class="hole hole-empty"></div>
+        <div class="hole hole-empty"></div>
+        <!-- LED 6 door — col4 row e -->
+        <div class="hole led-cell" id="cell-door" style="grid-row:8; grid-column:4;">
+          <div class="led led-door-locked" id="led-door"></div>
+          <div class="led-label">
+            <span class="led-name">Door</span>
+            <span class="led-state" id="lbl-door">locked</span>
+          </div>
+          <span class="led-pin">D7</span>
+        </div>
+        <div class="hole hole-empty"></div>
+
+      </div><!-- /bb-grid -->
+    </div><!-- /breadboard -->
+  </div><!-- /board-wrap -->
+
+  <!-- ══ INFO PANEL ══ -->
+  <div class="info-panel">
+    <div class="panel-title">// system state</div>
+
+    <div class="state-card" id="card-lights">
+      <div class="dot" id="dot-lights" style="background:#1a1508;"></div>
+      <div class="card-body">
+        <div class="card-name">Room Lights</div>
+        <div class="card-val" id="cv-lights">off</div>
+      </div>
+      <div class="card-pin">D1</div>
+    </div>
+
+    <div class="state-card" id="card-fan">
+      <div class="dot" id="dot-fan" style="background:#071410;"></div>
+      <div class="card-body">
+        <div class="card-name">Fan</div>
+        <div class="card-val" id="cv-fan">off</div>
+      </div>
+      <div class="card-pin">D0</div>
+    </div>
+
+    <div class="state-card" id="card-gas">
+      <div class="dot" id="dot-gas" style="background:#150808;"></div>
+      <div class="card-body">
+        <div class="card-name">Gas Valve</div>
+        <div class="card-val" id="cv-gas">safe · valve open</div>
+      </div>
+      <div class="card-pin">D6</div>
+    </div>
+
+    <div class="state-card" id="card-water">
+      <div class="dot" id="dot-water" style="background:#060e18;"></div>
+      <div class="card-body">
+        <div class="card-name">Water Valve</div>
+        <div class="card-val" id="cv-water">safe · valve open</div>
+      </div>
+      <div class="card-pin">D2</div>
+    </div>
+
+    <div class="state-card" id="card-door">
+      <div class="dot" id="dot-door" style="background:#130d04;"></div>
+      <div class="card-body">
+        <div class="card-name">Door Lock</div>
+        <div class="card-val" id="cv-door">locked · servo 0°</div>
+      </div>
+      <div class="card-pin">D7 + D5</div>
+    </div>
+
+    <div class="state-card" id="card-mode">
+      <div class="dot" id="dot-mode" style="background:var(--led-mode-on); box-shadow:0 0 6px var(--led-mode-glow);"></div>
+      <div class="card-body">
+        <div class="card-name">System Mode</div>
+        <div class="card-val" id="cv-mode">home · solid ON</div>
+      </div>
+      <div class="card-pin">D8</div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- ══ SENSORS ══ -->
+<div class="sensor-section">
+  <div class="board-label" style="margin-bottom:0.6rem;">// live sensor readings</div>
+  <div class="sensor-row">
+    <div class="sensor-card" id="sc-gas">
+      <div class="sensor-lbl">Gas sensor · D4</div>
+      <div class="sensor-val" id="sv-gas">0</div>
+      <div class="sensor-bar"><div class="sensor-fill" id="sf-gas" style="width:2%;background:#3a5a3a;"></div></div>
+    </div>
+    <div class="sensor-card" id="sc-water">
+      <div class="sensor-lbl">Water sensor · A0 (0–1023)</div>
+      <div class="sensor-val" id="sv-water">0</div>
+      <div class="sensor-bar"><div class="sensor-fill" id="sf-water" style="width:0%;background:#3a5a3a;"></div></div>
+    </div>
+    <div class="sensor-card" id="sc-flood">
+      <div class="sensor-lbl">Flood threshold · A0 &gt; 300</div>
+      <div class="sensor-val" id="sv-flood">clear</div>
+      <div class="sensor-bar"><div class="sensor-fill" id="sf-flood" style="width:0%;background:#3a5a3a;"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DEMO CONTROLS ══ -->
+<div class="controls">
+  <div class="controls-title">// demo controls — replace with mqtt in production</div>
+  <div class="btn-row">
+    <button onclick="setState('lights','off')">lights off</button>
+    <button onclick="setState('lights','dim')">lights dim</button>
+    <button onclick="setState('lights','bright')">lights bright</button>
+    <button onclick="setState('fan','off')">fan off</button>
+    <button onclick="setState('fan','on')">fan on</button>
+    <button onclick="setState('door','locked')">door lock</button>
+    <button onclick="setState('door','open')">door open</button>
+    <button onclick="setState('mode','home')">mode home</button>
+    <button onclick="setState('mode','away')">mode away</button>
+    <button onclick="setState('mode','sleep')">mode sleep</button>
+    <button onclick="setState('mode','guest')">mode guest</button>
+    <button onclick="setState('gas','danger')" class="danger">gas alert!</button>
+    <button onclick="setState('water','flood')" class="danger">flood alert!</button>
+    <button onclick="alertCancel()">alert cancel</button>
+  </div>
+</div>
+
+<!-- load MQTT.js for WebSocket MQTT support -->
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+<script>
+/* ════════════════════════════════════════════════
+   STATE
+════════════════════════════════════════════════ */
+const state = {
+  lights: 'off',    // 'off' | 'dim' | 'bright'
+  fan:    'off',    // 'off' | 'on'
+  gas:    'safe',   // 'safe' | 'danger'
+  water:  'safe',   // 'safe' | 'flood'
+  door:   'locked', // 'locked' | 'open'
+  mode:   'home',   // 'home' | 'away' | 'sleep' | 'guest'
+  gasRaw:   0,
+  waterRaw: 0,
+};
+
+/* ════════════════════════════════════════════════
+   UPDATE FUNCTIONS
+════════════════════════════════════════════════ */
+function setState(key, val) {
+  // When called by UI controls, publish the command (if connected).
+  // The third param controls whether to publish; internal updates set publish=false.
+  state[key] = val;
+  if (typeof publishStateChange === 'function') {
+    // publishStateChange will be a no-op if MQTT is not connected
+    publishStateChange(key, val);
+  }
+  render();
+}
+
+function alertCancel() {
+  state.gas   = 'safe';
+  state.water = 'safe';
+  if (typeof publishStateChange === 'function') publishStateChange('alert_cancel', '1');
+  render();
+}
+
+function render() {
+  renderLights();
+  renderFan();
+  renderGas();
+  renderWater();
+  renderDoor();
+  renderMode();
+}
+
+/* lights */
+function renderLights() {
+  const led = document.getElementById('led-lights');
+  const lbl = document.getElementById('lbl-lights');
+  const cv  = document.getElementById('cv-lights');
+  const dot = document.getElementById('dot-lights');
+  led.className = 'led';
+  switch(state.lights) {
+    case 'off':
+      led.classList.add('led-lights-off');
+      lbl.textContent = 'off'; cv.textContent = 'off';
+      dot.style.cssText = 'background:#1a1508; box-shadow:none;';
+      break;
+    case 'dim':
+      led.classList.add('led-lights-dim');
+      lbl.textContent = 'dim ~40%'; cv.textContent = 'dim · pwm 400';
+      dot.style.cssText = 'background:#a87c10; box-shadow:0 0 6px #a87c1066;';
+      break;
+    case 'bright':
+      led.classList.add('led-lights-bright');
+      lbl.textContent = 'bright 100%'; cv.textContent = 'bright · pwm 1023';
+      dot.style.cssText = 'background:#f5c518; box-shadow:0 0 8px #f5c51888;';
+      break;
+  }
+}
+
+/* fan */
+function renderFan() {
+  const led = document.getElementById('led-fan');
+  const lbl = document.getElementById('lbl-fan');
+  const cv  = document.getElementById('cv-fan');
+  const dot = document.getElementById('dot-fan');
+  led.className = 'led';
+  if (state.fan === 'on') {
+    led.classList.add('led-fan-on');
+    lbl.textContent = 'running'; cv.textContent = 'on · D0 HIGH';
+    dot.style.cssText = 'background:#1de9b6; box-shadow:0 0 8px #1de9b655;';
+  } else {
+    led.classList.add('led-fan-off');
+    lbl.textContent = 'off'; cv.textContent = 'off · D0 LOW';
+    dot.style.cssText = 'background:#071410; box-shadow:none;';
+  }
+}
+
+/* gas valve */
+function renderGas() {
+  const led  = document.getElementById('led-gas');
+  const lbl  = document.getElementById('lbl-gas');
+  const cv   = document.getElementById('cv-gas');
+  const dot  = document.getElementById('dot-gas');
+  const card = document.getElementById('card-gas');
+  const cell = document.getElementById('cell-gas');
+  led.className = 'led';
+  if (state.gas === 'danger') {
+    led.classList.add('led-gas-danger', 'alert-gas');
+    lbl.textContent = 'DANGER · closed'; cv.textContent = '⚠ gas detected · valve closed';
+    dot.style.cssText = 'background:#ff4444; box-shadow:0 0 8px #ff444488;';
+    card.classList.add('alert'); cell.classList.add('active');
+  } else {
+    led.classList.add('led-gas-safe');
+    lbl.textContent = 'safe · open'; cv.textContent = 'safe · valve open';
+    dot.style.cssText = 'background:#150808; box-shadow:none;';
+    card.classList.remove('alert'); cell.classList.remove('active');
+  }
+}
+
+/* water valve */
+function renderWater() {
+  const led  = document.getElementById('led-water');
+  const lbl  = document.getElementById('lbl-water');
+  const cv   = document.getElementById('cv-water');
+  const dot  = document.getElementById('dot-water');
+  const card = document.getElementById('card-water');
+  const cell = document.getElementById('cell-water');
+  led.className = 'led';
+  if (state.water === 'flood') {
+    led.classList.add('led-water-flood', 'alert-water');
+    lbl.textContent = 'FLOOD · closed'; cv.textContent = '⚠ flood detected · valve closed';
+    dot.style.cssText = 'background:#4da6ff; box-shadow:0 0 8px #4da6ff88;';
+    card.classList.add('alert'); cell.classList.add('active');
+  } else {
+    led.classList.add('led-water-safe');
+    lbl.textContent = 'safe · open'; cv.textContent = 'safe · valve open';
+    dot.style.cssText = 'background:#060e18; box-shadow:none;';
+    card.classList.remove('alert'); cell.classList.remove('active');
+  }
+}
+
+/* door */
+function renderDoor() {
+  const led = document.getElementById('led-door');
+  const lbl = document.getElementById('lbl-door');
+  const cv  = document.getElementById('cv-door');
+  const dot = document.getElementById('dot-door');
+  led.className = 'led';
+  if (state.door === 'open') {
+    led.classList.add('led-door-unlocked');
+    lbl.textContent = 'unlocked'; cv.textContent = 'open · servo 90°';
+    dot.style.cssText = 'background:#ff8c42; box-shadow:0 0 8px #ff8c4255;';
+  } else {
+    led.classList.add('led-door-locked');
+    lbl.textContent = 'locked'; cv.textContent = 'locked · servo 0°';
+    dot.style.cssText = 'background:#130d04; box-shadow:none;';
+  }
+}
+
+/* mode */
+function renderMode() {
+  const led   = document.getElementById('led-mode');
+  const lbl   = document.getElementById('lbl-mode');
+  const cv    = document.getElementById('cv-mode');
+  const dot   = document.getElementById('dot-mode');
+  const badge = document.getElementById('mode-badge');
+  led.className = 'led led-mode-on';
+  const m = state.mode;
+  badge.textContent = 'mode: ' + m;
+  lbl.textContent = m;
+  switch(m) {
+    case 'home':
+      cv.textContent = 'home · solid ON';
+      dot.style.cssText = 'background:#39d353; box-shadow:0 0 6px #39d35355;';
+      break;
+    case 'away':
+      led.classList.add('mode-away');
+      cv.textContent = 'away · slow blink 1s';
+      dot.style.cssText = 'background:#39d353; box-shadow:0 0 6px #39d35355; opacity:0.6;';
+      break;
+    case 'sleep':
+      led.classList.add('mode-sleep');
+      cv.textContent = 'sleep · fast blink 200ms';
+      dot.style.cssText = 'background:#39d353; box-shadow:0 0 6px #39d35355; opacity:0.5;';
+      break;
+    case 'guest':
+      cv.textContent = 'guest · double pulse';
+      dot.style.cssText = 'background:#39d353; box-shadow:0 0 6px #39d35355;';
+      startGuestPulse();
+      break;
+  }
+}
+
+/* guest double-pulse (JS-driven since CSS can't do double-pulse cleanly) */
+let guestInterval = null;
+function startGuestPulse() {
+  clearInterval(guestInterval);
+  const led = document.getElementById('led-mode');
+  let step = 0;
+  const seq = [1, 0.15, 1, 0.15, 0.15, 0.15, 0.15, 1]; // double flash then pause
+  guestInterval = setInterval(() => {
+    if (state.mode !== 'guest') { clearInterval(guestInterval); return; }
+    led.style.opacity = seq[step % seq.length];
+    step++;
+  }, 200);
+}
+
+/* ════════════════════════════════════════════════
+   MQTT INTEGRATION HOOK
+   Replace the demo sensor simulation below with
+   real MQTT.js calls:
+
+   const client = mqtt.connect('ws://YOUR_BROKER:9001');
+   client.subscribe('home/state/#');
+   client.subscribe('home/sensors/#');
+   client.subscribe('home/alerts/#');
+
+   client.on('message', (topic, message) => {
+     const val = message.toString();
+     if (topic === 'home/state/lights')      setState('lights', val);
+     if (topic === 'home/state/fan')         setState('fan', val);
+     if (topic === 'home/state/door')        setState('door', val);
+     if (topic === 'home/state/mode')        setState('mode', val);
+     if (topic === 'home/state/gas_valve')   setState('gas',   val==='closed'?'danger':'safe');
+     if (topic === 'home/state/water_valve') setState('water', val==='closed'?'flood':'safe');
+     if (topic === 'home/sensors/gas')       updateSensorGas(parseInt(val));
+     if (topic === 'home/sensors/water')     updateSensorWater(parseInt(val));
+   });
+════════════════════════════════════════════════ */
+
+function updateSensorGas(raw) {
+  state.gasRaw = raw;
+  document.getElementById('sv-gas').textContent = raw;
+  const pct = Math.min(raw * 100, 100);
+  const fill = document.getElementById('sf-gas');
+  fill.style.width = pct + '%';
+  fill.style.background = raw > 0 ? '#ff4444' : '#3a5a3a';
+  document.getElementById('sc-gas').classList.toggle('alert', raw > 0);
+}
+
+function updateSensorWater(raw) {
+  state.waterRaw = raw;
+  document.getElementById('sv-water').textContent = raw;
+  const pct = Math.min((raw / 1023) * 100, 100);
+  const fill = document.getElementById('sf-water');
+  fill.style.width = pct + '%';
+  fill.style.background = raw > 300 ? '#4da6ff' : '#3a5a3a';
+  const floodFill = document.getElementById('sf-flood');
+  const isFlood = raw > 300;
+  floodFill.style.width = isFlood ? '100%' : '0%';
+  floodFill.style.background = isFlood ? '#4da6ff' : '#3a5a3a';
+  document.getElementById('sv-flood').textContent = isFlood ? 'FLOOD' : 'clear';
+  document.getElementById('sc-flood').classList.toggle('alert', isFlood);
+  document.getElementById('sc-water').classList.toggle('alert', isFlood);
+}
+
+/* ── MQTT integration (WebSocket via mqtt.js) ── */
+const urlParams = new URLSearchParams(location.search);
+const brokerParam = urlParams.get('broker'); // optional override: e.g. wss://host:8883
+// Default to cloud broker from .env.cloud (secure WebSocket + auth)
+const defaultBroker = 'wss://YOUR_CLUSTER.s1.eu.hivemq.cloud:8883';
+const brokerUrl = brokerParam || defaultBroker;
+// MQTT connection options (cloud credentials)
+const mqttOptions = {
+  connectTimeout: 5000,
+  protocol: 'wss',
+  username: 'YOUR_MQTT_USER',
+  password: 'YOUR_MQTT_PASSWORD'
+};
+let mqttClient = null;
+let mqttConnected = false;
+
+function mqttConnect() {
+  try {
+    mqttClient = mqtt.connect(brokerUrl, mqttOptions);
+  } catch (err) {
+    console.error('MQTT connect error', err);
+    updateConn(false);
+    return;
+  }
+
+  mqttClient.on('connect', () => {
+    mqttConnected = true;
+    updateConn(true);
+    mqttClient.subscribe('home/state/#');
+    mqttClient.subscribe('home/sensors/#');
+    mqttClient.subscribe('home/alerts/#');
+    console.log('MQTT connected to', brokerUrl);
+  });
+
+  mqttClient.on('reconnect', () => { mqttConnected = false; updateConn(false, 'reconnecting'); });
+  mqttClient.on('close', () => { mqttConnected = false; updateConn(false); });
+  mqttClient.on('error', (err) => { console.error('MQTT error', err); });
+
+  mqttClient.on('message', (topic, message) => {
+    const val = message.toString();
+    // map topics into UI state (avoid republishing when updating)
+    if (topic === 'home/state/lights' || topic.endsWith('/lights')) setStateFromMqtt('lights', mapLightsState(val));
+    else if (topic === 'home/state/fan' || topic.endsWith('/fan')) setStateFromMqtt('fan', val);
+    else if (topic === 'home/state/door' || topic.endsWith('/door')) setStateFromMqtt('door', val);
+    else if (topic === 'home/state/mode') setStateFromMqtt('mode', val);
+    else if (topic === 'home/state/gas_valve') setStateFromMqtt('gas', val === 'closed' ? 'danger' : 'safe');
+    else if (topic === 'home/state/water_valve') setStateFromMqtt('water', val === 'closed' ? 'flood' : 'safe');
+    else if (topic === 'home/sensors/gas') updateSensorGas(parseInt(val));
+    else if (topic === 'home/sensors/water') updateSensorWater(parseInt(val));
+    else if (topic === 'home/alerts/gas') { if (val && val !== '0') setStateFromMqtt('gas', 'danger'); }
+    else if (topic === 'home/alerts/flood') { if (val && val !== '0') setStateFromMqtt('water', 'flood'); }
+  });
+}
+
+function updateConn(connected, statusText = 'connected') {
+  const pill = document.getElementById('conn-pill');
+  const pillText = document.getElementById('conn-text');
+  if (connected) {
+    pill.classList.add('connected');
+    pillText.textContent = 'mqtt connected';
+  } else {
+    pill.classList.remove('connected');
+    pillText.textContent = statusText === 'reconnecting' ? 'reconnecting' : 'disconnected';
+  }
+}
+
+function setStateFromMqtt(key, val) {
+  // Update local state without triggering a publish back to MQTT
+  state[key] = val;
+  render();
+}
+
+function mapLightsState(payload) {
+  if (payload === 'off' || payload === '0') return 'off';
+  if (payload === 'dim') return 'dim';
+  if (payload === 'bright' || payload === '1') return 'bright';
+  return payload;
+}
+
+function publishStateChange(key, val) {
+  if (!mqttClient || !mqttConnected) return;
+  let token = null;
+  switch (key) {
+    case 'lights':
+      if (val === 'off') token = 'lights_off';
+      if (val === 'dim') token = 'lights_dim';
+      if (val === 'bright') token = 'lights_bright';
+      break;
+    case 'fan':
+      token = val === 'on' ? 'fan_on' : 'fan_off';
+      break;
+    case 'door':
+      token = val === 'open' ? 'door_open' : 'door_close';
+      break;
+    case 'mode':
+      token = `mode_${val}`;
+      break;
+    case 'gas':
+      if (val === 'danger') {
+        mqttClient.publish('home/alerts/gas', '1');
+        token = 'emergency_activate';
+      } else if (val === 'safe') {
+        mqttClient.publish('home/alerts/gas', '0');
+        token = 'alert_cancel';
+      }
+      break;
+    case 'water':
+      if (val === 'flood') {
+        mqttClient.publish('home/alerts/flood', '1');
+        token = 'emergency_activate';
+      } else if (val === 'safe') {
+        mqttClient.publish('home/alerts/flood', '0');
+        token = 'alert_cancel';
+      }
+      break;
+    case 'alert_cancel':
+      token = 'alert_cancel';
+      break;
+  }
+  if (token) mqttClient.publish('home/commands', token);
+}
+
+// Start connection immediately
+mqttConnect();
+
+/* initial render */
+render();
+</script>
+</body>
+</html>

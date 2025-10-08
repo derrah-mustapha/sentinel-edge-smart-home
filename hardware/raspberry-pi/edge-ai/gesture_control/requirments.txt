@@ -1,0 +1,4 @@
+paho-mqtt>=1.6.1
+python-dotenv>=0.21.0
+opencv-python>=4.6.0
+mediapipe==0.10.14

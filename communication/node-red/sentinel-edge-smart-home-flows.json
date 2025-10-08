@@ -1,0 +1,684 @@
+[
+  {
+    "id": "tab_bridge",
+    "type": "tab",
+    "label": "Sentinel Bridge",
+    "disabled": false,
+    "info": "Normalize voice, gesture, and manual inputs into home/commands."
+  },
+  {
+    "id": "tab_state",
+    "type": "tab",
+    "label": "Sentinel State",
+    "disabled": false,
+    "info": "Merge retained state and alarm topics into a single live snapshot."
+  },
+  {
+    "id": "comment_bridge",
+    "type": "comment",
+    "z": "tab_bridge",
+    "name": "Command inputs are normalized here and always exit through home/commands.",
+    "info": "Voice, gesture, and test buttons all become canonical tokens.",
+    "x": 330,
+    "y": 40,
+    "wires": []
+  },
+  {
+    "id": "mqtt_voice",
+    "type": "mqtt in",
+    "z": "tab_bridge",
+    "name": "voice command",
+    "topic": "home/voice/command",
+    "qos": "0",
+    "datatype": "auto",
+    "broker": "mqtt_local",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 130,
+    "y": 100,
+    "wires": [["fn_normalize", "dbg_commands"]]
+  },
+  {
+    "id": "mqtt_gesture",
+    "type": "mqtt in",
+    "z": "tab_bridge",
+    "name": "gesture raw",
+    "topic": "home/gesture/raw",
+    "qos": "0",
+    "datatype": "auto",
+    "broker": "mqtt_local",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 130,
+    "y": 140,
+    "wires": [["fn_normalize", "dbg_commands"]]
+  },
+  {
+    "id": "fn_normalize",
+    "type": "function",
+    "z": "tab_bridge",
+    "name": "normalize command",
+    "func": "let raw = msg.payload;\nif (Buffer.isBuffer(raw)) {\n    raw = raw.toString(\"utf8\");\n}\n\nconst originalTopic = msg.topic;\n\nif (typeof raw === \"string\") {\n    const trimmed = raw.trim();\n    if (!trimmed) {\n        return null;\n    }\n\n    if ((trimmed.startsWith(\"{\") && trimmed.endsWith(\"}\")) || (trimmed.startsWith(\"[\") && trimmed.endsWith(\"]\"))) {\n        try {\n            raw = JSON.parse(trimmed);\n        } catch (error) {\n            raw = trimmed;\n        }\n    } else {\n        raw = trimmed;\n    }\n}\n\nlet token = null;\nlet meta = null;\n\nif (typeof raw === \"string\") {\n    token = raw;\n} else if (raw && typeof raw === \"object\") {\n    meta = raw;\n    token = raw.value ?? raw.command ?? raw.token ?? raw.text ?? raw.payload ?? null;\n}\n\nif (token === null || token === undefined) {\n    return null;\n}\n\nconst normalized = String(token).trim();\nif (!normalized) {\n    return null;\n}\n\nmsg.topic = \"home/commands\";\nmsg.payload = normalized;\nmsg.original_topic = originalTopic;\nif (meta) {\n    msg.command_meta = meta;\n}\nreturn msg;",
+    "outputs": 1,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 380,
+    "y": 120,
+    "wires": [["mqtt_commands", "dbg_commands"]]
+  },
+  {
+    "id": "mqtt_commands",
+    "type": "mqtt out",
+    "z": "tab_bridge",
+    "name": "publish to home/commands",
+    "topic": "",
+    "qos": "0",
+    "retain": "false",
+    "respTopic": "",
+    "contentType": "",
+    "userProps": "",
+    "correl": "",
+    "expiry": "",
+    "broker": "mqtt_local",
+    "x": 650,
+    "y": 120,
+    "wires": []
+  },
+  {
+    "id": "dbg_commands",
+    "type": "debug",
+    "z": "tab_bridge",
+    "name": "command trace",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 650,
+    "y": 160,
+    "wires": []
+  },
+  {
+    "id": "inj_fan_on",
+    "type": "inject",
+    "z": "tab_bridge",
+    "name": "fan_on",
+    "props": [
+      {
+        "p": "payload"
+      },
+      {
+        "p": "topic",
+        "vt": "str"
+      }
+    ],
+    "payload": "fan_on",
+    "payloadType": "str",
+    "topic": "node-red/manual",
+    "topicType": "str",
+    "x": 120,
+    "y": 240,
+    "wires": [["fn_normalize"]]
+  },
+  {
+    "id": "inj_fan_off",
+    "type": "inject",
+    "z": "tab_bridge",
+    "name": "fan_off",
+    "props": [
+      {
+        "p": "payload"
+      },
+      {
+        "p": "topic",
+        "vt": "str"
+      }
+    ],
+    "payload": "fan_off",
+    "payloadType": "str",
+    "topic": "node-red/manual",
+    "topicType": "str",
+    "x": 120,
+    "y": 280,
+    "wires": [["fn_normalize"]]
+  },
+  {
+    "id": "inj_lights_on",
+    "type": "inject",
+    "z": "tab_bridge",
+    "name": "lights_on",
+    "props": [
+      {
+        "p": "payload"
+      },
+      {
+        "p": "topic",
+        "vt": "str"
+      }
+    ],
+    "payload": "lights_on",
+    "payloadType": "str",
+    "topic": "node-red/manual",
+    "topicType": "str",
+    "x": 120,
+    "y": 320,
+    "wires": [["fn_normalize"]]
+  },
+  {
+    "id": "inj_lights_off",
+    "type": "inject",
+    "z": "tab_bridge",
+    "name": "lights_off",
+    "props": [
+      {
+        "p": "payload"
+      },
+      {
+        "p": "topic",
+        "vt": "str"
+      }
+    ],
+    "payload": "lights_off",
+    "payloadType": "str",
+    "topic": "node-red/manual",
+    "topicType": "str",
+    "x": 120,
+    "y": 360,
+    "wires": [["fn_normalize"]]
+  },
+  {
+    "id": "inj_door_open",
+    "type": "inject",
+    "z": "tab_bridge",
+    "name": "door_open",
+    "props": [
+      {
+        "p": "payload"
+      },
+      {
+        "p": "topic",
+        "vt": "str"
+      }
+    ],
+    "payload": "door_open",
+    "payloadType": "str",
+    "topic": "node-red/manual",
+    "topicType": "str",
+    "x": 120,
+    "y": 400,
+    "wires": [["fn_normalize"]]
+  },
+  {
+    "id": "inj_door_close",
+    "type": "inject",
+    "z": "tab_bridge",
+    "name": "door_close",
+    "props": [
+      {
+        "p": "payload"
+      },
+      {
+        "p": "topic",
+        "vt": "str"
+      }
+    ],
+    "payload": "door_close",
+    "payloadType": "str",
+    "topic": "node-red/manual",
+    "topicType": "str",
+    "x": 120,
+    "y": 440,
+    "wires": [["fn_normalize"]]
+  },
+  {
+    "id": "inj_windows_open",
+    "type": "inject",
+    "z": "tab_bridge",
+    "name": "windows_open_all",
+    "props": [
+      {
+        "p": "payload"
+      },
+      {
+        "p": "topic",
+        "vt": "str"
+      }
+    ],
+    "payload": "windows_open_all",
+    "payloadType": "str",
+    "topic": "node-red/manual",
+    "topicType": "str",
+    "x": 120,
+    "y": 480,
+    "wires": [["fn_normalize"]]
+  },
+  {
+    "id": "inj_windows_close",
+    "type": "inject",
+    "z": "tab_bridge",
+    "name": "windows_close_all",
+    "props": [
+      {
+        "p": "payload"
+      },
+      {
+        "p": "topic",
+        "vt": "str"
+      }
+    ],
+    "payload": "windows_close_all",
+    "payloadType": "str",
+    "topic": "node-red/manual",
+    "topicType": "str",
+    "x": 120,
+    "y": 520,
+    "wires": [["fn_normalize"]]
+  },
+  {
+    "id": "inj_mode_home",
+    "type": "inject",
+    "z": "tab_bridge",
+    "name": "mode_home",
+    "props": [
+      {
+        "p": "payload"
+      },
+      {
+        "p": "topic",
+        "vt": "str"
+      }
+    ],
+    "payload": "mode_home",
+    "payloadType": "str",
+    "topic": "node-red/manual",
+    "topicType": "str",
+    "x": 120,
+    "y": 560,
+    "wires": [["fn_normalize"]]
+  },
+  {
+    "id": "inj_mode_away",
+    "type": "inject",
+    "z": "tab_bridge",
+    "name": "mode_away",
+    "props": [
+      {
+        "p": "payload"
+      },
+      {
+        "p": "topic",
+        "vt": "str"
+      }
+    ],
+    "payload": "mode_away",
+    "payloadType": "str",
+    "topic": "node-red/manual",
+    "topicType": "str",
+    "x": 120,
+    "y": 600,
+    "wires": [["fn_normalize"]]
+  },
+  {
+    "id": "inj_mode_sleep",
+    "type": "inject",
+    "z": "tab_bridge",
+    "name": "mode_sleep",
+    "props": [
+      {
+        "p": "payload"
+      },
+      {
+        "p": "topic",
+        "vt": "str"
+      }
+    ],
+    "payload": "mode_sleep",
+    "payloadType": "str",
+    "topic": "node-red/manual",
+    "topicType": "str",
+    "x": 120,
+    "y": 640,
+    "wires": [["fn_normalize"]]
+  },
+  {
+    "id": "inj_mode_guest",
+    "type": "inject",
+    "z": "tab_bridge",
+    "name": "mode_guest",
+    "props": [
+      {
+        "p": "payload"
+      },
+      {
+        "p": "topic",
+        "vt": "str"
+      }
+    ],
+    "payload": "mode_guest",
+    "payloadType": "str",
+    "topic": "node-red/manual",
+    "topicType": "str",
+    "x": 120,
+    "y": 680,
+    "wires": [["fn_normalize"]]
+  },
+  {
+    "id": "inj_status",
+    "type": "inject",
+    "z": "tab_bridge",
+    "name": "status_query",
+    "props": [
+      {
+        "p": "payload"
+      },
+      {
+        "p": "topic",
+        "vt": "str"
+      }
+    ],
+    "payload": "status_query",
+    "payloadType": "str",
+    "topic": "node-red/manual",
+    "topicType": "str",
+    "x": 370,
+    "y": 240,
+    "wires": [["fn_normalize"]]
+  },
+  {
+    "id": "inj_alert_cancel",
+    "type": "inject",
+    "z": "tab_bridge",
+    "name": "alert_cancel",
+    "props": [
+      {
+        "p": "payload"
+      },
+      {
+        "p": "topic",
+        "vt": "str"
+      }
+    ],
+    "payload": "alert_cancel",
+    "payloadType": "str",
+    "topic": "node-red/manual",
+    "topicType": "str",
+    "x": 370,
+    "y": 280,
+    "wires": [["fn_normalize"]]
+  },
+  {
+    "id": "inj_emergency_activate",
+    "type": "inject",
+    "z": "tab_bridge",
+    "name": "emergency_activate",
+    "props": [
+      {
+        "p": "payload"
+      },
+      {
+        "p": "topic",
+        "vt": "str"
+      }
+    ],
+    "payload": "emergency_activate",
+    "payloadType": "str",
+    "topic": "node-red/manual",
+    "topicType": "str",
+    "x": 370,
+    "y": 320,
+    "wires": [["fn_normalize"]]
+  },
+  {
+    "id": "inj_emergency_cancel",
+    "type": "inject",
+    "z": "tab_bridge",
+    "name": "emergency_cancel",
+    "props": [
+      {
+        "p": "payload"
+      },
+      {
+        "p": "topic",
+        "vt": "str"
+      }
+    ],
+    "payload": "emergency_cancel",
+    "payloadType": "str",
+    "topic": "node-red/manual",
+    "topicType": "str",
+    "x": 370,
+    "y": 360,
+    "wires": [["fn_normalize"]]
+  },
+  {
+    "id": "comment_state",
+    "type": "comment",
+    "z": "tab_state",
+    "name": "Monitor retained state, sensors, and alerts from MQTT.",
+    "info": "This tab does not drive actuators directly; it only caches and exposes the latest snapshot.",
+    "x": 270,
+    "y": 40,
+    "wires": []
+  },
+  {
+    "id": "mqtt_state_main",
+    "type": "mqtt in",
+    "z": "tab_state",
+    "name": "state snapshot topics",
+    "topic": "home/state/#",
+    "qos": "0",
+    "datatype": "auto",
+    "broker": "mqtt_local",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 130,
+    "y": 100,
+    "wires": [["fn_snapshot", "dbg_state"]]
+  },
+  {
+    "id": "mqtt_state_legacy_fan",
+    "type": "mqtt in",
+    "z": "tab_state",
+    "name": "legacy fan state",
+    "topic": "home/fan/state",
+    "qos": "0",
+    "datatype": "auto",
+    "broker": "mqtt_local",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 120,
+    "y": 140,
+    "wires": [["fn_snapshot", "dbg_state"]]
+  },
+  {
+    "id": "mqtt_state_legacy_door",
+    "type": "mqtt in",
+    "z": "tab_state",
+    "name": "legacy door state",
+    "topic": "home/door/front/state",
+    "qos": "0",
+    "datatype": "auto",
+    "broker": "mqtt_local",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 130,
+    "y": 180,
+    "wires": [["fn_snapshot", "dbg_state"]]
+  },
+  {
+    "id": "mqtt_state_sensors",
+    "type": "mqtt in",
+    "z": "tab_state",
+    "name": "sensors",
+    "topic": "home/sensors/#",
+    "qos": "0",
+    "datatype": "auto",
+    "broker": "mqtt_local",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 100,
+    "y": 220,
+    "wires": [["fn_snapshot", "dbg_state"]]
+  },
+  {
+    "id": "mqtt_state_alerts",
+    "type": "mqtt in",
+    "z": "tab_state",
+    "name": "alerts",
+    "topic": "home/alerts/#",
+    "qos": "0",
+    "datatype": "auto",
+    "broker": "mqtt_local",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 100,
+    "y": 260,
+    "wires": [["fn_snapshot", "dbg_state"]]
+  },
+  {
+    "id": "mqtt_state_legacy_alarm",
+    "type": "mqtt in",
+    "z": "tab_state",
+    "name": "legacy alarms",
+    "topic": "home/alarm/#",
+    "qos": "0",
+    "datatype": "auto",
+    "broker": "mqtt_local",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 120,
+    "y": 300,
+    "wires": [["fn_snapshot", "dbg_state"]]
+  },
+  {
+    "id": "mqtt_state_valves",
+    "type": "mqtt in",
+    "z": "tab_state",
+    "name": "valves",
+    "topic": "home/valve/#",
+    "qos": "0",
+    "datatype": "auto",
+    "broker": "mqtt_local",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 100,
+    "y": 340,
+    "wires": [["fn_snapshot", "dbg_state"]]
+  },
+  {
+    "id": "mqtt_state_windows",
+    "type": "mqtt in",
+    "z": "tab_state",
+    "name": "windows",
+    "topic": "home/window/#",
+    "qos": "0",
+    "datatype": "auto",
+    "broker": "mqtt_local",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 110,
+    "y": 380,
+    "wires": [["fn_snapshot", "dbg_state"]]
+  },
+  {
+    "id": "mqtt_state_lights",
+    "type": "mqtt in",
+    "z": "tab_state",
+    "name": "lights",
+    "topic": "home/light/#",
+    "qos": "0",
+    "datatype": "auto",
+    "broker": "mqtt_local",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 100,
+    "y": 420,
+    "wires": [["fn_snapshot", "dbg_state"]]
+  },
+  {
+    "id": "fn_snapshot",
+    "type": "function",
+    "z": "tab_state",
+    "name": "state snapshot",
+    "func": "const snapshot = flow.get(\"sentinelSnapshot\") || {};\nconst topic = msg.topic;\n\nsnapshot[topic] = msg.payload;\nsnapshot.last_topic = topic;\nsnapshot.last_seen = new Date().toISOString();\nflow.set(\"sentinelSnapshot\", snapshot);\n\nmsg.payload = {\n    last_topic: topic,\n    last_value: msg.payload,\n    snapshot\n};\n\nreturn msg;",
+    "outputs": 1,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 370,
+    "y": 250,
+    "wires": [["dbg_state"]]
+  },
+  {
+    "id": "dbg_state",
+    "type": "debug",
+    "z": "tab_state",
+    "name": "state snapshot trace",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 650,
+    "y": 250,
+    "wires": []
+  },
+  {
+    "id": "mqtt_local",
+    "type": "mqtt-broker",
+    "name": "Local MQTT",
+    "broker": "localhost",
+    "port": "1883",
+    "clientid": "sentinel-node-red",
+    "autoConnect": true,
+    "usetls": false,
+    "protocolVersion": "4",
+    "keepalive": "60",
+    "cleansession": true,
+    "birthTopic": "",
+    "birthQos": "0",
+    "birthRetain": "false",
+    "birthPayload": "",
+    "closeTopic": "",
+    "closeQos": "0",
+    "closeRetain": "false",
+    "closePayload": "",
+    "willTopic": "",
+    "willQos": "0",
+    "willRetain": "false",
+    "willPayload": ""
+  }
+]

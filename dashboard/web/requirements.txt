@@ -1,0 +1,5 @@
+flask>=2.0
+# Use latest compatible Flask-SocketIO available on PyPI
+flask-socketio==5.6.1
+eventlet>=0.33.0
+paho-mqtt>=1.6.1

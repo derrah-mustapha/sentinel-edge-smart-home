@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Register - Sentinel Edge Smart Home</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .register-container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      width: 100%;
+      max-width: 420px;
+      padding: 40px;
+      animation: slideUp 0.5s ease-out;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .logo {
+      font-size: 32px;
+      margin-bottom: 8px;
+      color: #667eea;
+      font-weight: 700;
+    }
+
+    .subtitle {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+
+    h1 {
+      font-size: 24px;
+      color: #333;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #333;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      padding: 12px 14px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      font-family: inherit;
+    }
+
+    input[type="text"]:focus,
+    input[type="password"]:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    input[type="text"]::placeholder,
+    input[type="password"]::placeholder {
+      color: #999;
+    }
+
+    .error-message {
+      background-color: #fee;
+      color: #c33;
+      padding: 12px 14px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      border-left: 4px solid #c33;
+      animation: shake 0.3s ease-in-out;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+
+    .password-requirements {
+      background-color: #f5f5f5;
+      padding: 12px 14px;
+      border-radius: 8px;
+      margin-top: 8px;
+      font-size: 12px;
+      color: #666;
+      line-height: 1.5;
+    }
+
+    .requirement {
+      display: flex;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .requirement::before {
+      content: "✓";
+      display: inline-block;
+      width: 16px;
+      color: #999;
+      font-weight: bold;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-top: 24px;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 20px;
+      color: #999;
+      font-size: 14px;
+    }
+
+    .footer a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.3s ease;
+    }
+
+    .footer a:hover {
+      color: #764ba2;
+      text-decoration: underline;
+    }
+
+    @media (max-width: 480px) {
+      .register-container {
+        padding: 30px 20px;
+      }
+
+      h1 {
+        font-size: 20px;
+      }
+
+      .btn {
+        padding: 14px;
+        font-size: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="register-container">
+    <div class="header">
+      <div class="logo">🏠</div>
+      <div class="subtitle">Sentinel Edge</div>
+      <h1>Create Account</h1>
+    </div>
+
+    {% if error %}
+    <div class="error-message">{{ error }}</div>
+    {% endif %}
+
+    <form method="post">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input
+          type="text"
+          id="username"
+          name="username"
+          placeholder="Choose a username"
+          required
+          autofocus
+          autocomplete="username"
+          minlength="3"
+        />
+        <div class="password-requirements">
+          <div class="requirement">At least 3 characters</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input
+          type="password"
+          id="password"
+          name="password"
+          placeholder="Create a password"
+          required
+          autocomplete="new-password"
+          minlength="4"
+        />
+        <div class="password-requirements">
+          <div class="requirement">At least 4 characters</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="password_confirm">Confirm Password</label>
+        <input
+          type="password"
+          id="password_confirm"
+          name="password_confirm"
+          placeholder="Re-enter your password"
+          required
+          autocomplete="new-password"
+          minlength="4"
+        />
+      </div>
+
+      <button type="submit" class="btn">Create Account</button>
+    </form>
+
+    <div class="footer">
+      Already have an account? <a href="/login">Sign in</a>
+    </div>
+  </div>
+
+  <script>
+    // Validate password match on form submit
+    document.querySelector('form').addEventListener('submit', function (e) {
+      const pwd = document.getElementById('password').value;
+      const pwdConfirm = document.getElementById('password_confirm').value;
+      if (pwd !== pwdConfirm) {
+        e.preventDefault();
+        alert('Passwords do not match!');
+      }
+    });
+  </script>
+</body>
+</html>

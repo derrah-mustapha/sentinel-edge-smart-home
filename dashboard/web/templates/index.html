@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sentinel Edge - Smart Home Dashboard</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary-color: #667eea;
+      --secondary-color: #764ba2;
+      --success-color: #10b981;
+      --danger-color: #ef4444;
+      --warning-color: #f59e0b;
+      --info-color: #3b82f6;
+      --light-bg: #f9fafb;
+      --card-bg: #ffffff;
+      --border-color: #e5e7eb;
+      --text-dark: #1f2937;
+      --text-light: #6b7280;
+      --shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: var(--light-bg);
+      color: var(--text-dark);
+      line-height: 1.6;
+    }
+
+    /* HEADER */
+    .header {
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+      color: white;
+      padding: 20px;
+      box-shadow: var(--shadow-lg);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .header-title {
+      font-size: 24px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-title .icon {
+      font-size: 28px;
+    }
+
+    .connection-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success-color);
+      animation: pulse 2s infinite;
+    }
+
+    .status-dot.disconnected {
+      background: var(--danger-color);
+      animation: none;
+    }
+
+    @keyframes pulse {
+      0%,
+      100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.5;
+      }
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 13px;
+    }
+
+    .user-info {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 8px 12px;
+      border-radius: 6px;
+    }
+
+    .logout-btn {
+      background: rgba(255, 255, 255, 0.3);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .logout-btn:hover {
+      background: rgba(255, 255, 255, 0.4);
+      border-color: rgba(255, 255, 255, 0.8);
+    }
+
+    /* MAIN CONTENT */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 30px 20px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .grid-large {
+      grid-template-columns: 1fr 2fr;
+    }
+
+    @media (max-width: 768px) {
+      .grid-large {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* CARDS */
+    .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border-color);
+      transition: all 0.3s ease;
+    }
+
+    .card:hover {
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-2px);
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: var(--text-dark);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-subtitle {
+      font-size: 12px;
+      color: var(--text-light);
+      margin-top: 8px;
+    }
+
+    /* STATE DISPLAY */
+    .state-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 12px;
+    }
+
+    .state-item {
+      background: var(--light-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    .state-item:hover {
+      border-color: var(--primary-color);
+      background: #f0f4ff;
+    }
+
+    .state-label {
+      font-size: 11px;
+      color: var(--text-light);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+      word-break: break-word;
+      max-height: 40px;
+      overflow: hidden;
+    }
+
+    .state-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--primary-color);
+      word-break: break-word;
+    }
+
+    /* COMMAND GROUPS */
+    .command-group {
+      margin-bottom: 20px;
+    }
+
+    .command-group-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-dark);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--border-color);
+    }
+
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .btn {
+      padding: 10px 14px;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      background: var(--light-bg);
+      color: var(--text-dark);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      background: var(--primary-color);
+      color: white;
+      border-color: var(--primary-color);
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn.danger {
+      border-color: var(--danger-color);
+      color: var(--danger-color);
+    }
+
+    .btn.danger:hover {
+      background: var(--danger-color);
+      color: white;
+    }
+
+    .btn.success {
+      border-color: var(--success-color);
+      color: var(--success-color);
+    }
+
+    .btn.success:hover {
+      background: var(--success-color);
+      color: white;
+    }
+
+    /* INPUT SECTION */
+    .input-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    textarea {
+      flex: 1;
+      min-width: 150px;
+      padding: 10px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: inherit;
+      transition: all 0.3s ease;
+    }
+
+    input[type="text"]:focus,
+    input[type="password"]:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+      font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+      font-size: 12px;
+    }
+
+    /* LOG/TABLE */
+    .log-container {
+      background: #1f2937;
+      color: #e5e7eb;
+      border-radius: 8px;
+      padding: 12px;
+      font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+      font-size: 11px;
+      height: 300px;
+      overflow-y: auto;
+      border: 1px solid var(--border-color);
+      line-height: 1.4;
+    }
+
+    .log-line {
+      margin-bottom: 4px;
+      word-break: break-all;
+    }
+
+    .log-time {
+      color: #10b981;
+    }
+
+    .log-topic {
+      color: #3b82f6;
+    }
+
+    .log-payload {
+      color: #f59e0b;
+    }
+
+    /* TABLE */
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .table th {
+      background: var(--light-bg);
+      padding: 10px 12px;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-dark);
+      border-bottom: 2px solid var(--border-color);
+    }
+
+    .table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-light);
+      word-break: break-word;
+    }
+
+    .table tr:hover {
+      background: var(--light-bg);
+    }
+
+    .table code {
+      background: var(--light-bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 12px;
+    }
+
+    /* STATUS MESSAGES */
+    .status-message {
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      margin-top: 8px;
+      display: none;
+    }
+
+    .status-message.show {
+      display: block;
+    }
+
+    .status-success {
+      background: #d1fae5;
+      color: #065f46;
+      border-left: 3px solid var(--success-color);
+    }
+
+    .status-error {
+      background: #fee2e2;
+      color: #991b1b;
+      border-left: 3px solid var(--danger-color);
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      .header-container {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .header-actions {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .container {
+        padding: 20px 16px;
+      }
+
+      .grid {
+        gap: 16px;
+      }
+
+      .card {
+        padding: 16px;
+      }
+
+      .state-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .log-container {
+        height: 250px;
+        font-size: 11px;
+      }
+
+      input[type="text"],
+      input[type="password"] {
+        min-width: 100px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .header {
+        padding: 16px;
+      }
+
+      .header-title {
+        font-size: 18px;
+      }
+
+      .header-title .icon {
+        font-size: 24px;
+      }
+
+      .container {
+        padding: 16px 12px;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .btn {
+        padding: 8px 12px;
+        font-size: 12px;
+      }
+
+      .card {
+        padding: 12px;
+      }
+
+      .state-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+</head>
+<body>
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-container">
+      <div class="header-title">
+        <span class="icon">🏠</span>
+        <span>Sentinel Edge</span>
+      </div>
+      <div class="connection-indicator">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="connStatus">Connecting...</span>
+      </div>
+      <div class="header-actions">
+        <div class="user-info">👤 {{ session.get('user', 'User') }}</div>
+        <a href="/logout" class="logout-btn">Logout</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="container">
+    <!-- SYSTEM STATUS -->
+    <div class="grid">
+      <div class="card">
+        <div class="card-title">⚡ System Status</div>
+        <div style="font-size: 14px; line-height: 1.8; color: var(--text-light);">
+          <div><strong>MQTT Broker:</strong> <span id="brokerStatus">Connecting...</span></div>
+          <div><strong>Last Gesture:</strong> <span id="lastGesture" style="color: var(--text-dark); font-weight: 600;">—</span></div>
+          <div><strong>Last Voice:</strong> <span id="lastVoice" style="color: var(--text-dark); font-weight: 600;">—</span></div>
+          <div><strong>Topics Active:</strong> <span id="topicCount" style="color: var(--primary-color); font-weight: 600;">0</span></div>
+        </div>
+        <div class="card-subtitle">Real-time connection status and latest inputs</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🎮 Quick Access</div>
+        <div class="btn-group">
+          <button class="btn danger" onclick="simulateEmergency()">🚨 Emergency</button>
+          <button class="btn success" onclick="simulateMode('mode_home')">🏠 Home Mode</button>
+          <button class="btn" onclick="simulateMode('mode_away')">🚗 Away Mode</button>
+          <button class="btn" onclick="simulateMode('mode_sleep')">😴 Sleep Mode</button>
+        </div>
+        <div class="card-subtitle">Quick control buttons for common scenarios</div>
+      </div>
+    </div>
+
+    <!-- DEVICE STATE -->
+    <div class="card">
+      <div class="card-title">📊 Device States (Real-Time)</div>
+      <div id="stateGrid" class="state-grid">
+        <div style="color: var(--text-light); text-align: center; grid-column: 1/-1; padding: 40px 0;">Waiting for MQTT state...</div>
+      </div>
+      <div class="card-subtitle">All connected device states from MQTT topics</div>
+    </div>
+
+    <!-- COMMAND CONTROL -->
+    <div class="grid">
+      <div class="card">
+        <div class="card-title">🎯 Command Control</div>
+        <div id="commandGroups" style="color: var(--text-light); font-size: 13px;">Loading command catalog...</div>
+        <div id="cmdStatus" class="status-message"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📡 Manual Publish</div>
+        <div class="input-row">
+          <input id="topic" type="text" placeholder="Topic (e.g., home/lights)" />
+        </div>
+        <div class="input-row">
+          <textarea id="payload" placeholder="Payload"></textarea>
+        </div>
+        <div class="input-row">
+          <button class="btn" onclick="rawPublish()" style="flex: 1;">Publish</button>
+        </div>
+        <div id="pubStatus" class="status-message"></div>
+      </div>
+    </div>
+
+    <!-- SIMULATION & CONTROL -->
+    <div class="grid">
+      <div class="card">
+        <div class="card-title">🎪 Gesture Simulation</div>
+        <div class="input-row">
+          <input id="simGesture" type="text" placeholder="Gesture token (e.g., door_open)" />
+          <button class="btn" onclick="simulateGesture()">Simulate</button>
+        </div>
+        <div id="gestureStatus" class="status-message"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🎤 Voice Simulation</div>
+        <div class="input-row">
+          <input id="simVoice" type="text" placeholder="Voice token (e.g., fan_on)" />
+          <button class="btn" onclick="simulateVoice()">Simulate</button>
+        </div>
+        <div id="voiceStatus" class="status-message"></div>
+      </div>
+    </div>
+
+    <!-- SUBSCRIPTION MANAGEMENT -->
+    <div class="card">
+      <div class="card-title">📋 Topic Management</div>
+      <div class="input-row">
+        <input id="subtopic" type="text" placeholder="Topic pattern (e.g., home/#)" />
+        <button class="btn" onclick="subscribe()" style="flex: 0 0 auto;">Subscribe</button>
+        <button class="btn" onclick="unsubscribe()" style="flex: 0 0 auto;">Unsubscribe</button>
+      </div>
+      <div id="subStatus" class="status-message"></div>
+      <div style="margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+        <div style="font-size: 12px; font-weight: 600; color: var(--text-dark); margin-bottom: 8px;">Active Topics:</div>
+        <div id="topicList" style="max-height: 200px; overflow-y: auto;">
+          <div style="color: var(--text-light); font-size: 13px;">No topics yet.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LOGS -->
+    <div class="grid">
+      <div class="card">
+        <div class="card-title">📜 MQTT Messages Log</div>
+        <div class="log-container" id="log"></div>
+        <button class="btn" onclick="clearLog()" style="margin-top: 12px;">Clear Log</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">👤 Audit Log</div>
+        <div style="max-height: 340px; overflow-y: auto;">
+          <table class="table" id="auditTable">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>User</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="auditBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- COMMAND HISTORY -->
+    <div class="card">
+      <div class="card-title">⌚ Command History</div>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>User</th>
+            <th>Command</th>
+            <th>Source</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="commandsBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const socket = io();
+    let currentState = {};
+    let stateTopics = [];
+    let commandCatalog = {};
+    let logHistory = [];
+    const MAX_LOG_LINES = 500;
+
+    // ===== SOCKET.IO EVENTS =====
+    socket.on('initial_state', (s) => {
+      currentState = s || {};
+      renderState();
+    });
+
+    socket.on('mqtt_message', (m) => {
+      appendLog(m);
+      currentState[m.topic] = m.payload;
+      renderState();
+
+      if (m.topic === 'home/gesture/raw' || m.topic.endsWith('/gesture/raw')) {
+        document.getElementById('lastGesture').innerText = m.payload;
+      }
+      if (m.topic === 'home/voice/command' || m.topic.endsWith('/voice/command')) {
+        document.getElementById('lastVoice').innerText = m.payload;
+      }
+    });
+
+    socket.on('topic_list_update', (arr) => {
+      renderTopicList(arr || []);
+    });
+
+    socket.on('logs', (arr) => {
+      logHistory = [];
+      (arr || []).slice(0, 250).reverse().forEach((it) => appendLog(it));
+    });
+
+    socket.on('publish_ok', (m) => {
+      showStatus(document.getElementById('pubStatus'), `✓ Published to ${m.topic}`, true);
+    });
+
+    socket.on('publish_error', (m) => {
+      showStatus(document.getElementById('pubStatus'), `✗ ${m.error || 'Error publishing'}`, false);
+    });
+
+    socket.on('command_result', (r) => {
+      if (r.ok) {
+        showStatus(document.getElementById('cmdStatus'), `✓ Command sent: ${r.token}`, true);
+      } else {
+        showStatus(document.getElementById('cmdStatus'), `✗ ${r.error || 'Command failed'}`, false);
+      }
+      loadAudit();
+      loadCommandsHistory();
+    });
+
+    socket.on('connect', () => {
+      updateConnectionStatus(true);
+      socket.emit('request_logs', { limit: 500 });
+      loadSystemConfig();
+      loadCurrentState();
+      loadAudit();
+      loadCommandsHistory();
+    });
+
+    socket.on('disconnect', () => {
+      updateConnectionStatus(false);
+    });
+
+    // ===== UI FUNCTIONS =====
+    function updateConnectionStatus(connected) {
+      const dot = document.getElementById('statusDot');
+      const status = document.getElementById('connStatus');
+      const broker = document.getElementById('brokerStatus');
+
+      if (connected) {
+        dot.classList.remove('disconnected');
+        status.innerText = 'Connected';
+        broker.innerText = 'Connected ✓';
+        broker.style.color = 'var(--success-color)';
+      } else {
+        dot.classList.add('disconnected');
+        status.innerText = 'Disconnected';
+        broker.innerText = 'Disconnected ✗';
+        broker.style.color = 'var(--danger-color)';
+      }
+    }
+
+    function showStatus(el, message, success) {
+      el.className = `status-message show ${success ? 'status-success' : 'status-error'}`;
+      el.innerText = message;
+      setTimeout(() => {
+        el.classList.remove('show');
+      }, 4000);
+    }
+
+    async function loadSystemConfig() {
+      const res = await fetch('/api/system-config');
+      const cfg = await res.json();
+      commandCatalog = cfg.command_catalog || {};
+      stateTopics = cfg.state_topics || [];
+      renderCommandGroups();
+    }
+
+    async function loadCurrentState() {
+      const res = await fetch('/api/state');
+      currentState = await res.json();
+      renderState();
+    }
+
+    function renderState() {
+      const topics = stateTopics.length > 0 ? stateTopics : Object.keys(currentState).sort();
+      const grid = document.getElementById('stateGrid');
+
+      if (!topics.length) {
+        grid.innerHTML = '<div style="color: var(--text-light); text-align: center; grid-column: 1/-1; padding: 40px 0;">No state data yet.</div>';
+        return;
+      }
+
+      let html = '';
+      topics.forEach((topic) => {
+        const value = currentState[topic] !== undefined ? currentState[topic] : '—';
+        const displayTopic = topic.split('/').pop();
+        html += `<div class="state-item">
+          <div class="state-label">${displayTopic}</div>
+          <div class="state-value">${value}</div>
+        </div>`;
+      });
+      grid.innerHTML = html;
+    }
+
+    function renderCommandGroups() {
+      const container = document.getElementById('commandGroups');
+      const groups = Object.keys(commandCatalog || {}).sort();
+
+      if (!groups.length) {
+        container.innerHTML = '<div style="color: var(--text-light);">No commands configured.</div>';
+        return;
+      }
+
+      let html = '';
+      groups.forEach((groupName) => {
+        const tokens = commandCatalog[groupName] || [];
+        html += `<div class="command-group">
+          <div class="command-group-title">${groupName}</div>
+          <div class="btn-group">`;
+        tokens.forEach((token) => {
+          html += `<button class="btn" onclick="executeToken('${token}')">${token}</button>`;
+        });
+        html += '</div></div>';
+      });
+      container.innerHTML = html;
+    }
+
+    function executeToken(token) {
+      showStatus(document.getElementById('cmdStatus'), `Sending ${token}...`, true);
+      socket.emit('execute_token', { token, source: 'dashboard_manual' });
+    }
+
+    function renderTopicList(arr) {
+      const topics = (arr && arr.length) ? arr : Object.keys(currentState);
+      const count = topics.length;
+      document.getElementById('topicCount').innerText = count;
+
+      if (!topics.length) {
+        document.getElementById('topicList').innerHTML = '<div style="color: var(--text-light); font-size: 13px;">No topics subscribed.</div>';
+        return;
+      }
+
+      topics.sort();
+      let html = '<table class="table" style="font-size: 12px;"><tbody>';
+      topics.forEach((t) => {
+        const v = currentState[t] || '—';
+        html += `<tr><td style="word-break: break-all;"><code>${t}</code></td><td style="text-align: right; white-space: nowrap;">${v}</td></tr>`;
+      });
+      html += '</tbody></table>';
+      document.getElementById('topicList').innerHTML = html;
+    }
+
+    function appendLog(m) {
+      const ts = new Date(m.ts * 1000).toLocaleTimeString();
+      logHistory.unshift({ ts, topic: m.topic, payload: m.payload });
+      if (logHistory.length > MAX_LOG_LINES) {
+        logHistory.pop();
+      }
+      renderLog();
+    }
+
+    function renderLog() {
+      const log = document.getElementById('log');
+      let html = '';
+      logHistory.slice(0, 200).forEach((entry) => {
+        html += `<div class="log-line"><span class="log-time">[${entry.ts}]</span> <span class="log-topic">${entry.topic}</span> → <span class="log-payload">${entry.payload}</span></div>`;
+      });
+      log.innerHTML = html;
+      log.scrollTop = 0;
+    }
+
+    function clearLog() {
+      logHistory = [];
+      document.getElementById('log').innerHTML = '';
+    }
+
+    function rawPublish() {
+      const topic = document.getElementById('topic').value.trim();
+      const payload = document.getElementById('payload').value.trim();
+      if (!topic) {
+        showStatus(document.getElementById('pubStatus'), '✗ Please enter a topic', false);
+        return;
+      }
+      socket.emit('publish', { topic, payload });
+    }
+
+    function subscribe() {
+      const t = document.getElementById('subtopic').value.trim();
+      if (!t) {
+        showStatus(document.getElementById('subStatus'), '✗ Please enter a topic', false);
+        return;
+      }
+      socket.emit('subscribe', { topic: t });
+      showStatus(document.getElementById('subStatus'), `✓ Subscribed to ${t}`, true);
+    }
+
+    function unsubscribe() {
+      const t = document.getElementById('subtopic').value.trim();
+      if (!t) {
+        showStatus(document.getElementById('subStatus'), '✗ Please enter a topic', false);
+        return;
+      }
+      socket.emit('unsubscribe', { topic: t });
+      showStatus(document.getElementById('subStatus'), `✓ Unsubscribed from ${t}`, true);
+    }
+
+    function simulateGesture() {
+      const token = document.getElementById('simGesture').value.trim();
+      if (!token) {
+        showStatus(document.getElementById('gestureStatus'), '✗ Please enter a gesture token', false);
+        return;
+      }
+      socket.emit('simulate_gesture', { token });
+      document.getElementById('simGesture').value = '';
+    }
+
+    function simulateVoice() {
+      const token = document.getElementById('simVoice').value.trim();
+      if (!token) {
+        showStatus(document.getElementById('voiceStatus'), '✗ Please enter a voice token', false);
+        return;
+      }
+      socket.emit('simulate_voice', { token });
+      document.getElementById('simVoice').value = '';
+    }
+
+    function simulateMode(mode) {
+      socket.emit('execute_token', { token: mode, source: 'dashboard_quick' });
+    }
+
+    function simulateEmergency() {
+      socket.emit('execute_token', { token: 'emergency_activate', source: 'dashboard_emergency' });
+    }
+
+    async function loadAudit() {
+      const res = await fetch('/api/audit');
+      const items = await res.json();
+      const body = document.getElementById('auditBody');
+      body.innerHTML = '';
+      items.slice(0, 50).forEach((it) => {
+        const d = new Date(it.ts * 1000).toLocaleString();
+        const row = body.insertRow();
+        row.innerHTML = `<td style="font-size: 12px;">${d}</td><td><strong>${it.user}</strong></td><td>${it.action}</td>`;
+      });
+    }
+
+    async function loadCommandsHistory() {
+      const res = await fetch('/api/commands');
+      const items = await res.json();
+      const body = document.getElementById('commandsBody');
+      body.innerHTML = '';
+      items.slice(0, 50).forEach((it) => {
+        const d = new Date(it.ts * 1000).toLocaleString();
+        const row = body.insertRow();
+        const statusColor = it.status === 'sent' ? 'color: var(--success-color);' : 'color: var(--text-light);';
+        row.innerHTML = `<td style="font-size: 12px;">${d}</td><td><strong>${it.user}</strong></td><td><code>${it.token}</code></td><td>${it.source}</td><td style="${statusColor}">${it.status}</td>`;
+      });
+    }
+
+    // Initial load
+    loadAudit();
+    loadCommandsHistory();
+  </script>
+</body>
+</html>
+
+    async function loadAudit() {
+      const r = await fetch('/api/audit');
+      const a = await r.json();
+      const el = document.getElementById('audit');
+      el.innerHTML = '';
+      a.slice(0, 300).forEach((it) => {
+        const d = new Date(it.ts * 1000).toLocaleString();
+        el.innerHTML += `<div class="small">${d} | <strong>${it.user}</strong> | ${it.action}</div>`;
+      });
+    }
+
+    async function loadCommandsHistory() {
+      const r = await fetch('/api/commands');
+      const items = await r.json();
+      const el = document.getElementById('commandsHistory');
+      el.innerHTML = '';
+      items.slice(0, 300).forEach((it) => {
+        const d = new Date(it.ts * 1000).toLocaleString();
+        el.innerHTML += `<div class="small">${d} | <strong>${it.user}</strong> | ${it.token} | ${it.source} | ${it.status}</div>`;
+      });
+    }
+  </script>
+</body>
+</html>
